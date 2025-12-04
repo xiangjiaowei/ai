@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AI Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+
+    <style>
+        /* 全局基础样式 */
+        body { background-color: #343541; color: #ececf1; overflow: hidden; height: 100dvh; }
+        .hide-scrollbar::-webkit-scrollbar { width: 4px; }
+        .hide-scrollbar::-webkit-scrollbar-thumb { background-color: #565869; border-radius: 2px; }
+        
+        /* 消息气泡 & Markdown 样式 */
+        .prose pre { background: #000; padding: 10px; border-radius: 5px; overflow-x: auto; margin: 5px 0; }
+        .prose code { background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 3px; font-family: monospace; font-size: 0.9em; }
+        .prose p { margin-bottom: 0.5em; }
+        .blink { animation: blink 1s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* 移动端特定优化 */
+        .mobile-layout { height: 100dvh; display: flex; flex-direction: column; }
+        
+        /* 电脑端特定优化 */
+        .desktop-layout { height: 100vh; display: flex; }
+        .sidebar { background-color: #202123; transition: width 0.3s; }
+    </style>
+</head>
+<body>
+
+    <div id="mobile-view" class="mobile-layout md:hidden">
+        <header class="flex items-center justify-between p-4 bg-[#343541] border-b border-gray-600 z-10">
+            <div class="flex items-center gap-2">
+                <span id="mobile-status" class="w-2 h-2 rounded-full bg-red-500"></span>
+                <h1 class="font-bold text-lg">AI Mobile</h1>
+            </div>
+            <button onclick="toggleSettings()" class="text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
+        </header>
+
+        <div id="mobile-chat-box" class="flex-1 overflow-y-auto p-4 space-y-4 hide-scrollbar">
+            <div class="bg-gray-700/50 p-4 rounded-xl text-sm border border-gray-600">
+                <p>👋 你好！我是你的移动端 AI 助手。</p>
+                <p class="text-xs text-gray-400 mt-2">如果在 4G/5G 下无法连接，请尝试将地址中的 http 改为 https。</p>
+            </div>
+        </div>
+
+        <div class="p-3 bg-[#343541] border-t border-gray-600">
+            <div class="flex items-end gap-2 bg-[#40414f] p-2 rounded-2xl border border-gray-600">
+                <textarea id="mobile-input" rows="1" class="w-full bg-transparent text-white max-h-32 px-2 py-1 focus:outline-none resize-none" placeholder="发送消息..." oninput="autoResize(this)"></textarea>
+                <button onclick="handleSend('mobile')" class="bg-green-600 p-2 rounded-xl text-white shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="desktop-view" class="desktop-layout hidden md:flex">
+        <div class="sidebar w-[260px] flex flex-col p-2 border-r border-black/10">
+            <button onclick="clearChat()" class="flex items-center gap-3 p-3 rounded-md border border-white/20 hover:bg-gray-700/50 text-sm text-white mb-4 transition">
+                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                新对话
+            </button>
+            <div class="flex-1"></div>
+            <div class="border-t border-white/20 pt-2">
+                <button onclick="toggleSettings()" class="flex items-center gap-3 p-3 w-full hover:bg-gray-700/50 rounded-md text-sm text-white transition">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    设置与连接
+                </button>
+            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col relative bg-[#343541]">
+            <header class="p-4 text-center border-b border-white/10 text-gray-400 text-sm">
+                Desktop Mode | <span id="desktop-status" class="text-red-500">未连接</span>
+            </header>
+            
+            <div id="desktop-chat-box" class="flex-1 overflow-y-auto p-4 space-y-6 w-full max-w-3xl mx-auto hide-scrollbar pt-10">
+                <div class="flex gap-4">
+                    <div class="w-8 h-8 rounded-sm bg-green-500 flex items-center justify-center shrink-0">AI</div>
+                    <div class="bg-[#444654] p-4 rounded-md shadow-sm">
+                        你好！我是运行在你电脑本地的 AI。请在左下角设置中填入 Cpolar 地址。
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-8 w-full max-w-3xl mx-auto">
+                <div class="relative bg-[#40414f] rounded-lg shadow-lg border border-gray-600/50">
+                    <textarea id="desktop-input" rows="1" class="w-full bg-transparent text-white p-4 pr-12 focus:outline-none resize-none max-h-48 overflow-y-hidden" placeholder="Send a message..." oninput="autoResize(this)" onkeydown="handleEnter(event)"></textarea>
+                    <button onclick="handleSend('desktop')" class="absolute right-3 bottom-3 text-gray-400 hover:text-white">
+                        <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+                <div class="text-center text-xs text-gray-500 mt-2">AI generates responses based on your local model.</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-[#202123] w-full max-w-md rounded-lg p-6 border border-gray-600 shadow-2xl">
+            <h2 class="text-xl font-bold mb-4">连接配置</h2>
+            
+            <label class="block text-xs font-bold mb-2 text-gray-400">Cpolar 公网地址 (务必带 http 或 https)</label>
+            <input type="text" id="api-host" class="w-full bg-[#343541] border border-gray-600 rounded p-3 mb-1 text-white focus:border-green-500 focus:outline-none" placeholder="https://xxx.cpolar.top">
+            <p class="text-xs text-yellow-500 mb-4">重要: 手机访问若报错，请尝试使用 HTTPS 开头的地址。</p>
+
+            <label class="block text-xs font-bold mb-2 text-gray-400">System Prompt</label>
+            <textarea id="system-prompt" rows="3" class="w-full bg-[#343541] border border-gray-600 rounded p-3 mb-6 text-white focus:outline-none" placeholder="You are a helpful assistant."></textarea>
+            
+            <div class="flex gap-2">
+                <button onclick="toggleSettings()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded transition">关闭</button>
+                <button onclick="saveSettings()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded transition font-bold">保存连接</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 核心逻辑 ---
+        let CONFIG = { baseUrl: "", systemPrompt: "You are a helpful assistant." };
+        
+        // DOM 元素获取 (自动判断当前是手机还是电脑视图)
+        const getElements = (mode) => ({
+            box: document.getElementById(mode === 'mobile' ? 'mobile-chat-box' : 'desktop-chat-box'),
+            input: document.getElementById(mode === 'mobile' ? 'mobile-input' : 'desktop-input')
+        });
+
+        // 初始化
+        window.onload = () => {
+            const savedHost = localStorage.getItem('ai_host');
+            if(savedHost) {
+                document.getElementById('api-host').value = savedHost;
+                CONFIG.baseUrl = savedHost;
+                updateStatus(true);
+            } else {
+                toggleSettings();
+            }
+            const savedPrompt = localStorage.getItem('ai_prompt');
+            if(savedPrompt) document.getElementById('system-prompt').value = savedPrompt;
+        };
+
+        function toggleSettings() {
+            document.getElementById('settings-modal').classList.toggle('hidden');
+        }
+
+        function updateStatus(connected) {
+            const color = connected ? 'bg-green-500' : 'bg-red-500';
+            const text = connected ? 'text-green-500' : 'text-red-500';
+            const statusText = connected ? '已就绪' : '未连接';
+            
+            // 移动端状态点
+            const mDot = document.getElementById('mobile-status');
+            mDot.className = `w-2 h-2 rounded-full ${color}`;
+            
+            // 桌面端状态字
+            const dText = document.getElementById('desktop-status');
+            dText.className = text;
+            dText.innerText = statusText;
+        }
+
+        function saveSettings() {
+            let host = document.getElementById('api-host').value.trim();
+            host = host.replace(/\/$/, ""); // 去掉末尾斜杠
+            
+            if(!host.startsWith('http')) {
+                alert('地址必须包含 http:// 或 https://');
+                return;
+            }
+
+            localStorage.setItem('ai_host', host);
+            localStorage.setItem('ai_prompt', document.getElementById('system-prompt').value);
+            CONFIG.baseUrl = host;
+            CONFIG.systemPrompt = document.getElementById('system-prompt').value || CONFIG.systemPrompt;
+            
+            updateStatus(true);
+            toggleSettings();
+        }
+
+        function autoResize(el) {
+            el.style.height = 'auto';
+            el.style.height = el.scrollHeight + 'px';
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend('desktop');
+            }
+        }
+
+        function clearChat() {
+            document.getElementById('desktop-chat-box').innerHTML = '';
+            document.getElementById('mobile-chat-box').innerHTML = '';
+        }
+
+        // --- 消息发送与网络请求 ---
+        async function handleSend(mode) {
+            const { box, input } = getElements(mode);
+            const text = input.value.trim();
+            if(!text) return;
+            if(!CONFIG.baseUrl) { toggleSettings(); return; }
+
+            // 1. 渲染用户消息
+            input.value = '';
+            input.style.height = 'auto';
+            
+            const userHtml = mode === 'mobile' 
+                ? `<div class="flex justify-end"><div class="bg-green-600 text-white p-3 rounded-2xl rounded-tr-none max-w-[85%] shadow-sm">${text.replace(/\n/g, '<br>')}</div></div>`
+                : `<div class="flex gap-4 p-4 border-b border-black/10"><div class="w-8 h-8 rounded-sm bg-indigo-500 shrink-0 flex items-center justify-center">You</div><div class="prose prose-invert pt-1">${text.replace(/\n/g, '<br>')}</div></div>`;
+            
+            const userDiv = document.createElement('div');
+            userDiv.innerHTML = userHtml;
+            box.appendChild(userDiv);
+            box.scrollTop = box.scrollHeight;
+
+            // 2. 渲染 AI 占位符
+            const aiDiv = document.createElement('div');
+            const aiContentId = `ai-${Date.now()}`;
+            
+            if (mode === 'mobile') {
+                aiDiv.innerHTML = `<div class="flex justify-start"><div class="bg-gray-700 text-gray-200 p-3 rounded-2xl rounded-tl-none max-w-[90%] shadow-sm prose prose-invert" id="${aiContentId}"><span class="blink">▍</span></div></div>`;
+            } else {
+                aiDiv.innerHTML = `<div class="flex gap-4 p-4 border-b border-black/10 bg-[#444654]"><div class="w-8 h-8 rounded-sm bg-green-500 shrink-0 flex items-center justify-center">AI</div><div class="prose prose-invert w-full pt-1" id="${aiContentId}"><span class="blink">▍</span></div></div>`;
+            }
+            box.appendChild(aiDiv);
+            box.scrollTop = box.scrollHeight;
+            
+            const resultArea = document.getElementById(aiContentId);
+
+            // 3. 发起请求
+            try {
+                // 自动补全路径
+                const endpoint = `${CONFIG.baseUrl}/v1/chat/completions`;
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }, // 不需要 Authorization 通常也能跑
+                    body: JSON.stringify({
+                        model: "local-model",
+                        messages: [
+                            { role: "system", content: CONFIG.systemPrompt },
+                            { role: "user", content: text }
+                        ],
+                        temperature: 0.7,
+                        stream: true
+                    })
+                });
+
+                if (!response.ok) throw new Error(`Status: ${response.status}`);
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let aiText = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const jsonStr = line.substring(6);
+                            if (jsonStr === '[DONE]') continue;
+                            try {
+                                const json = JSON.parse(jsonStr);
+                                const content = json.choices[0]?.delta?.content || "";
+                                aiText += content;
+                                resultArea.innerHTML = marked.parse(aiText);
+                                box.scrollTop = box.scrollHeight;
+                            } catch (e) {}
+                        }
+                    }
+                }
+                
+                // 代码高亮
+                resultArea.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+
+            } catch (error) {
+                resultArea.innerHTML += `<br><span class="text-red-400 font-bold block mt-2">❌ 发送失败: ${error.message}</span><span class="text-xs text-gray-400 block">请检查: 1.Cpolar地址是否填对(http vs https) 2.电脑是否开机 3.LM Studio CORS是否开启</span>`;
+            }
+        }
+    </script>
+</body>
+</html>
